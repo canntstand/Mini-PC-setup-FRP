@@ -49,7 +49,7 @@ services:
       - audiobookshelf
       - nextcloud
       - vaultwarden
-  
+
   certbot:
     image: certbot/certbot:latest
     container_name: certbot
@@ -61,6 +61,7 @@ services:
     command: >
       certonly --webroot
       -w /var/www/certbot
+      --http-01-port 8081
       -d "${SYNAPSE_SERVER_NAME}"
       --email ${EMAIL}
       --agree-tos
@@ -88,7 +89,7 @@ services:
     environment:
       - FRP_SERVER_IP=${FRP_SERVER_IP}
       - FRP_TOKEN=${FRP_TOKEN}
-      - FRP_SSH_REMOTE_PORT=${FRP_SSH_REMOTE_PORT}
+      - FRP_SSH_REMOTE_PORT=2222
     depends_on:
       - nginx
 
