@@ -13,10 +13,10 @@
 2. В DNS-панели вашего домена направить A-запись (и wildcard-запись *) на публичный IP-адрес вашего VPS. Выбрать любой свободный порт на VPS для проброса SSH наружу и указать его в переменную FRP_SSH_REMOTE_PORT в .env на локальной машине.
 3. На локальном ПК: Установить argon2 (`sudo apt update && sudo apt install argon2 -y`) для генерации хеша пароля vaultwarden.
 4. На VPS: Выполнить `git clone https://github.com/canntstand/Mini-PC-setup-FRP && cd Mini-PC-setup-FRP`. Создать там минимальный файл .env с одной переменной `FRP_TOKEN`.
-5. На VPS: Запустить автоматическую настройку сетевой части одной командой: `chmod +x setup_remote.sh && ./setup_remote.sh`
+5. На VPS: Запустить автоматическую настройку сетевой части одной командой: `chmod +x scripts/setup_remote.sh && ./scripts/setup_remote.sh`
 6. На локальном ПК (домашнем сервере): Выполнить `git clone https://github.com/canntstand/Mini-PC-setup-FRP && cd Mini-PC-setup-FRP`.
 7. На локальном ПК: Настроить все переменные в файле .env по примеру .env.example (в переменной `SYNAPSE_SERVER_NAME` обязательно указать твой домен, заполнить IP-адрес VPS в `FRP_SERVER_IP` и токен в `FRP_TOKEN`).
-8. На локальном ПК (убедившись, что Amnezia VPN включена): Запустить сборку основного проекта одной командой: `chmod +x setup_local.sh && ./setup_local.sh`
+8. На локальном ПК (убедившись, что Amnezia VPN включена): Запустить сборку основного проекта одной командой: `chmod +x scripts/setup_local.sh && ./scripts/setup_local.sh`
 
 ## SSH (стоит настроить и на локальном сервере, и на удаленном vps)
 1. ПРЕДУСТАНОВКА (Если вы зашли на чистый сервер под пользователем root):

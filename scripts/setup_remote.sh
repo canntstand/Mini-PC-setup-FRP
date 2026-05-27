@@ -14,7 +14,7 @@ if [ -z "$FRP_TOKEN" ]; then
 fi
 
 echo "=== 1. Установка и настройка системного Nginx ==="
-sudo apt update && sudo apt install nginx -y
+sudo apt update && sudo apt install nginx libnginx-mod-stream -y
 
 echo "Накатываем конфигурацию Nginx..."
 sudo cp ./nginx/nginx.remote.conf /etc/nginx/nginx.conf
@@ -24,7 +24,6 @@ sudo systemctl restart nginx
 sudo systemctl enable nginx
 
 echo "=== 2. Запуск серверной части FRP (frps) ==="
-
 sudo docker compose -f docker-compose.remote.yaml up -d --force-recreate
 
 echo "=== НАСТРОЙКА VPS УСПЕШНО ЗАВЕРШЕНА ==="
