@@ -318,7 +318,7 @@ services:
     restart: always
     privileged: true
     ports:
-      - "8080:8080"
+      - "8090:8090"
     command:
       - "--allow_dynamic_housekeeping=true"
       - "--housekeeping_interval=10s"

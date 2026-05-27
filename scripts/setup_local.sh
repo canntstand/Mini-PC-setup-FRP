@@ -76,10 +76,6 @@ trusted_key_servers:
   - server_name: "matrix.org"
 
 enable_registration: true
-enable_registration_captcha: true
-recaptcha_siteverify_api: "https://www.google.com/recaptcha/api/siteverify"
-recaptcha_public_key: "${RECAPTCHA_PUBLIC_KEY}"
-recaptcha_private_key: "${RECAPTCHA_PRIVATE_KEY}"
 EOF
 
 echo "Файл homeserver.yaml успешно сгенерирован."
@@ -94,7 +90,7 @@ sudo chown -R 33:33 /home/r9888/NextcloudData
 
 echo "Создаем хеш для vaultwarden..."
 if ! command -v argon2 &> /dev/null; then
-    echo "ОШИБКА: утилита argon2 не найдена. Установите её: sudo pacman -S argon2"
+    echo "Установите argon2 через ваш менеджер пакетов (например, apt install argon2)"
     exit 1
 fi
 
