@@ -144,7 +144,7 @@ else
 fi
 
 echo "Настройка прав доступа для папок с данными..."
-sudo chmod -R 777 ./grafana/ ./matrix/ ./nextcloud/ ./vaultwarden/ ./synapse/
+sudo chmod -R 777 ./grafana/
 
 echo "Запуск Docker-контейнеров (исключая Certbot)..."
 MAIN_SERVICES="synapse synapse_db nginx nginx_exporter frpc navidrome audiobookshelf nextcloud nextcloud_db nextcloud_configure vaultwarden vaultwarden_db prometheus_init prometheus grafana node_exporter cadvisor portainer"
