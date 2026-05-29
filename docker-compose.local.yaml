@@ -514,10 +514,15 @@ services:
         
         echo 'Создание динамического env-файла для matrix_alertmanager...';
         mkdir -p /mnt/matrix_alertmanager;
-        echo "MATRIX_HOMESERVER_URL=http://synapse:8008" > /mnt/matrix_alertmanager/matrix_alertmanager.env;
-        echo "MATRIX_USER_ID=@${MATRIX_BOT_USERNAME}:${SYNAPSE_SERVER_NAME}" >> /mnt/matrix_alertmanager/matrix_alertmanager.env;
-        echo "MATRIX_ACCESS_TOKEN=$$TOKEN" >> /mnt/matrix_alertmanager/matrix_alertmanager.env;
-        echo "APP_SECRET=${MONITORING_SECRET}" >> /mnt/matrix_alertmanager/matrix_alertmanager.env;
+
+        cat <<EOF > /mnt/matrix_alertmanager/config.json
+        {
+          "homeserverUrl": "http://synapse:8008",
+          "userId": "@alertbot:frolovserver.ru",
+          "accessToken": "$TOKEN",
+          "appSecret": "$MONITORING_SECRET"
+        }
+        EOF
         
         echo 'Мониторинг успешно сконфигурирован!';
     deploy:
@@ -551,8 +556,10 @@ services:
     container_name: matrix_alertmanager
     logging: *default-logging
     restart: unless-stopped
-    env_file:
-      - ./matrix_alertmanager/matrix_alertmanager.env
+    volumes:
+      - ./matrix_alertmanager/config.json:/app/config.json:ro
+    environment:
+      - CONFIG_PATH=/app/config.json
     depends_on:
       synapse:
         condition: service_started
