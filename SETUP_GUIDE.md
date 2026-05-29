@@ -19,10 +19,9 @@
 8. На локальном ПК (убедившись, что Amnezia VPN включена): Запустить сборку основного проекта одной командой: `chmod +x scripts/setup_local.sh && ./scripts/setup_local.sh`.
 
 ## SSH (стоит настроить и на локальном сервере, и на удаленном vps)
-
 1. ПРЕДУСТАНОВКА (Если вы зашли на чистый сервер под пользователем root): Создать нового пользователя `sudo adduser server-user`, добавить его в группу администраторов `sudo usermod -aG sudo server-user` и переключиться через `su - server-user`.
 2. Включить службу SSH одной командой: `sudo systemctl enable --now ssh`.
-3. На клиенте (вашем ПК): Сгенерировать ключ безопасности: `ssh-keygen -t ed25519 -C "servehub-access"`.
+3. На клиенте (вашем ПК): Сгенерировать ключ безопасности: `ssh-keygen -t ed25519 -C "key-access"`.
 4. На клиенте (вашем ПК): Скопировать ключ на устройство через `ssh-copy-id server-user@server-ip` (ввести пароль сервера в последний раз; повторить для VPS и локального ПК).
 5. Проверить вход без пароля с клиента и на сервере открыть конфигурацию: `sudo nano /etc/ssh/sshd_config`.
 6. Выставить и проверить параметры безопасности: `PasswordAuthentication no`, `PermitRootLogin no`, `MaxAuthTries 3`, `PermitEmptyPasswords no`.

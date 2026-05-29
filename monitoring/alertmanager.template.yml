@@ -1,0 +1,15 @@
+global:
+  resolve_timeout: 5m
+
+route:
+  group_by: ['alertname', 'instance']
+  group_wait: 10s
+  group_interval: 30s
+  repeat_interval: 2h
+  receiver: 'matrix-room-alerts'
+
+receivers:
+- name: 'matrix-room-alerts'
+  webhook_configs:
+  - url: 'http://matrix_alertmanager:3000/alerts?secret=${MONITORING_SECRET}&room=${MATRIX_ROOM_ID}'
+    send_resolved: true

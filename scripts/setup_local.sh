@@ -17,7 +17,7 @@ fi
 
 
 echo "Подготовка директорий..."
-DIRS=("./matrix/data" "./grafana/data" "./nextcloud/data" "./vaultwarden/data" "./synapse/data" "./navidrome/data" "./audiobookshelf/data" "./certs" "./prometheus/data" "./nginx/templates")
+DIRS=("./matrix/data" "./grafana/data" "./nextcloud/data" "./vaultwarden/data" "./synapse/data" "./navidrome/data" "./audiobookshelf/data" "./certs" "./prometheus/data" "./nginx/templates" "./matrix_alertmanager")
 for dir in "${DIRS[@]}"; do
     mkdir -p "$dir"
 done
@@ -89,7 +89,7 @@ else
 fi
 
 echo "Запуск основных сервисов..."
-MAIN_SERVICES="synapse synapse_db nginx nginx_exporter frpc navidrome audiobookshelf nextcloud nextcloud_db nextcloud_configure vaultwarden vaultwarden_db prometheus_init prometheus grafana node_exporter cadvisor portainer"
+MAIN_SERVICES="synapse synapse_db nginx nginx_exporter frpc navidrome audiobookshelf nextcloud nextcloud_db nextcloud_configure vaultwarden vaultwarden_db prometheus_init prometheus grafana node_exporter cadvisor portainer blackbox_exporter monitoring_configure alertmanager matrix_alertmanager"
 docker compose -f docker-compose.local.yaml up -d $MAIN_SERVICES
 
 if [ "$NEED_REAL_CERT" = true ]; then

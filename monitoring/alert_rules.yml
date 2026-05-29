@@ -1,0 +1,11 @@
+groups:
+  - name: blackbox_alerts
+    rules:
+      - alert: WebsiteDown
+        expr: probe_success == 0
+        for: 1m
+        labels:
+          severity: critical
+        annotations:
+          summary: "Сервис {{ $labels.instance }} упал!"
+          description: "Blackbox не смог достучаться до эндпоинта. Статус проверки: {{ $value }}"

@@ -112,7 +112,7 @@ services:
       ND_BASEURL: "/navidrome"
     volumes:
       - ./navidrome/data:/data
-      - /home/${HOME}/Music:/music:ro
+      - /home/${HOME_USER_NAME}/Music:/music:ro
 
   audiobookshelf:
     container_name: audiobookshelf
@@ -126,9 +126,9 @@ services:
     volumes:
       - ./audiobookshelf/config:/config
       - ./audiobookshelf/metadata:/metadata
-      - /home/${HOME}/Audiobooks:/audiobooks
-      - /home/${HOME}/Podcasts:/podcasts
-      - /home/${HOME}/Books:/books
+      - /home/${HOME_USER_NAME}/Audiobooks:/audiobooks
+      - /home/${HOME_USER_NAME}/Podcasts:/podcasts
+      - /home/${HOME_USER_NAME}/Books:/books
 
   nextcloud_db:
     image: postgres:18
@@ -169,7 +169,7 @@ services:
       - HTACCESS_OVERRIDE_CURRENT=1
     volumes:
       - ./nextcloud/html:/var/www/html
-      - /home/${HOME}/NextcloudData:/var/www/html/data
+      - /home/${HOME_USER_NAME}/NextcloudData:/var/www/html/data
 
   nextcloud_configure:
     image: nextcloud:stable
@@ -180,7 +180,7 @@ services:
       - nextcloud
     volumes:
       - ./nextcloud/html:/var/www/html
-      - /home/${HOME}/NextcloudData:/var/www/html/data
+      - /home/${HOME_USER_NAME}/NextcloudData:/var/www/html/data
     entrypoint: /bin/sh
     command: >
       -c "
@@ -269,7 +269,9 @@ services:
     extra_hosts:
       - "host.docker.internal:host-gateway"
     volumes:
-      - ./prometheus/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - ./monitoring/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - ./monitoring/alert_rules.yml:/etc/prometheus/alert_rules.yml:ro
+      - ./monitoring/targets.json:/etc/prometheus/targets.json:ro
       - ./prometheus/data:/prometheus
     depends_on:
       prometheus_init:
@@ -348,6 +350,101 @@ services:
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock
       - ./portainer/data:/data
+
+  blackbox_exporter:
+    image: prom/blackbox-exporter:v0.25.0
+    container_name: blackbox_exporter
+    restart: always
+    volumes:
+      - ./monitoring/blackbox.yml:/etc/blackbox_exporter/config.yml
+    command:
+      - "--config.file=/etc/blackbox_exporter/config.yml"
+
+  monitoring_configure:
+    image: alpine:latest
+    container_name: monitoring_configure
+    restart: "no"
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+      - ./monitoring:/mnt/monitoring
+      - ./matrix_alertmanager:/mnt/matrix_alertmanager
+    environment:
+      - MATRIX_BOT_USERNAME=${MATRIX_BOT_USERNAME}
+      - MATRIX_BOT_PASSWORD=${MATRIX_BOT_PASSWORD}
+      - SYNAPSE_SERVER_NAME=${SYNAPSE_SERVER_NAME}
+      - MONITORING_SECRET=${MONITORING_SECRET}
+      - MATRIX_ROOM_ID=${MATRIX_ROOM_ID}
+    depends_on:
+      synapse:
+        condition: service_started
+      prometheus_init:
+        condition: service_completed_successfully
+    entrypoint:
+      - /bin/sh
+      - -c
+    command:
+      - |
+        apk add --no-cache curl jq gettext docker-cli;
+        
+        echo 'Ожидание запуска Synapse API...';
+        until curl -s http://synapse:8008/_matrix/client/versions; do sleep 3; done;
+        
+        echo 'Регистрация пользователя бота в Matrix...';
+        docker exec synapse register_new_matrix_user -c /data/homeserver.yaml -u "${MATRIX_BOT_USERNAME}" -p "${MATRIX_BOT_PASSWORD}" --no-admin || echo 'Пользователь уже существует или пропущен';
+        
+        echo 'Авторизация бота и получение Access Token...';
+        LOGIN_JSON=$$(curl -s -X POST -H 'Content-Type: application/json' -d '{"type":"m.login.password","user":"${MATRIX_BOT_USERNAME}","password":"${MATRIX_BOT_PASSWORD}"}' http://synapse:8008/_matrix/client/v3/login);
+        
+        TOKEN=$$(echo $$LOGIN_JSON | jq -r '.access_token');
+        if [ "$$TOKEN" = "null" ] || [ -z "$$TOKEN" ]; then
+          echo 'Ошибка: Не удалось получить access_token бота!';
+          echo $$LOGIN_JSON;
+          exit 1;
+        fi;
+        
+        echo 'Генерация alertmanager.yml на основе шаблона...';
+        envsubst < /mnt/monitoring/alertmanager.template.yml > /mnt/monitoring/alertmanager.yml;
+        
+        echo 'Создание динамического env-файла для matrix_alertmanager...';
+        mkdir -p /mnt/matrix_alertmanager;
+        echo "MATRIX_HOMESERVER_URL=http://synapse:8008" > /mnt/matrix_alertmanager/matrix_alertmanager.env;
+        echo "MATRIX_USER_ID=@${MATRIX_BOT_USERNAME}:${SYNAPSE_SERVER_NAME}" >> /mnt/matrix_alertmanager/matrix_alertmanager.env;
+        echo "MATRIX_ACCESS_TOKEN=$$TOKEN" >> /mnt/matrix_alertmanager/matrix_alertmanager.env;
+        echo "APP_SECRET=${MONITORING_SECRET}" >> /mnt/matrix_alertmanager/matrix_alertmanager.env;
+        
+        echo 'Мониторинг успешно сконфигурирован!';
+
+  alertmanager:
+    image: prom/alertmanager:v0.27.0
+    container_name: alertmanager
+    restart: always
+    volumes:
+      - ./monitoring/alertmanager.yml:/etc/alertmanager/alertmanager.yml
+    command:
+      - "--config.file=/etc/alertmanager/alertmanager.yml"
+    expose:
+      - 9093
+    depends_on:
+      prometheus:
+        condition: service_started
+      monitoring_configure:
+        condition: service_completed_successfully
+
+  matrix_alertmanager:
+    image: jaywink/matrix-alertmanager:latest
+    container_name: matrix_alertmanager
+    restart: always
+    env_file:
+      - ./matrix_alertmanager/matrix_alertmanager.env
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+    depends_on:
+      synapse:
+        condition: service_started
+      monitoring_configure:
+        condition: service_completed_successfully
 
 volumes:
   synapse_db_data:
