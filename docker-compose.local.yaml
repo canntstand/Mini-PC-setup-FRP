@@ -50,14 +50,14 @@ services:
     image: nginx:stable
     container_name: nginx_proxy
     logging: *default-logging
-    expose:
-      - 80
-      - 443
+    ports:
+      - "443:443"
+      - "80:80"
     restart: unless-stopped
     environment:
       - SYNAPSE_SERVER_NAME=${SYNAPSE_SERVER_NAME}
     volumes:
-      - ./nginx/templates/nginx.conf.template:/etc/nginx/templates/default.conf.template:ro
+      - ./nginx/templates/local.conf.template:/etc/nginx/templates/default.conf.template:ro
       - ./nginx/www:/usr/share/nginx/html:ro
       - ./certs:/etc/letsencrypt:ro
       - ./certbot/www:/var/www/certbot:ro
@@ -110,25 +110,6 @@ services:
     ports:
       - "9113:9113"
     command: --nginx.scrape-uri=http://nginx_proxy:8080/stub_status
-    depends_on:
-      - nginx
-    deploy:
-      resources:
-        limits:
-          memory: 512M
-
-  frpc:
-    image: snowdreamtech/frpc:latest
-    container_name: frpc
-    restart: unless-stopped
-    logging: *default-logging
-    volumes:
-      - ./frp/frpc.toml:/etc/frp/frpc.toml:ro
-    extra_hosts:
-      - "host.docker.internal:host-gateway"
-    environment:
-      - FRP_SERVER_IP=${FRP_SERVER_IP}
-      - FRP_TOKEN=${FRP_TOKEN}
     depends_on:
       - nginx
     deploy:
@@ -561,39 +542,38 @@ services:
       resources:
         limits:
           memory: 512M
-  
+
   heartbeat_to_vps:
     image: alpine:latest
     container_name: heartbeat_to_vps
     user: root
     restart: always
     environment:
-      - SERVER_IP=${FRP_SERVER_IP}
+      - SERVER_IP=172.29.172.1
       - ADMIN_USER=${ADMIN_USER}
       - ADMIN_PASS=${ADMIN_PASSWORD}
     command: |
       sh -c '
       apk add --no-cache curl jq
-      
+
       echo "Авторизация..."
       TOKEN=$$(curl -s -X POST "http://$$SERVER_IP:3001/api/v1/login" \
         -H "Content-Type: application/json" \
         -d "$$(printf "{\x22username\x22:\x22%s\x22,\x22password\x22:\x22%s\x22}" "$$ADMIN_USER" "$$ADMIN_PASS")" | jq -r ".token")
-      
+
       if [ -z "$$TOKEN" ] || [ "$$TOKEN" = "null" ]; then
         echo "ОШИБКА: Не удалось получить токен авторизации!"
         exit 1
       fi
-      
+
       echo "Получение Push-токена..."
-      PUSH_TOKEN=$$(curl -s -X GET "http://$$SERVER_IP:3001/api/v1/monitor" \
-        -H "Authorization: Bearer $$TOKEN" | jq -r ".[0].pushToken")
+      PUSH_TOKEN=$$(curl -s -X GET "http://$$SERVER_IP:3001/api/v1/monitor" -H "Authorization: Bearer $$TOKEN" | jq -r ".[] | select(.name==\x22Home-Server\x22) | .pushToken")
         
       if [ -z "$$PUSH_TOKEN" ] || [ "$$PUSH_TOKEN" = "null" ]; then
         echo "ОШИБКА: Не удалось получить Push-токен! Убедитесь, что в Kuma создан хотя бы один монитор."
         exit 1
       fi
-      
+
       echo "Запуск бесконечного цикла пингов (токен: $$PUSH_TOKEN)..."
       while true; do
         curl -sS "http://$$SERVER_IP:3001/api/push/$$PUSH_TOKEN?status=up&msg=OK" > /dev/null

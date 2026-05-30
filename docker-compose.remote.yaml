@@ -5,20 +5,18 @@ x-logging: &default-logging
     max-file: "3"
 
 services:
-  frps:
-    image: snowdreamtech/frps:latest
-    container_name: frps
-    logging: *default-logging
+  amneziawg:
+    image: ghcr.io/amnezia-vpn/amneziawg-go:latest
+    container_name: amneziawg
     restart: always
-    network_mode: host
-    environment:
-      - FRP_TOKEN=${FRP_TOKEN}
+    cap_add:
+      - NET_ADMIN
+      - SYS_MODULE
     volumes:
-      - ./frp/frps.toml:/etc/frp/frps.toml:ro
-    deploy:
-      resources:
-        limits:
-          memory: 512M
+      - ./amneziawg:/etc/amneziawg
+      - /lib/modules:/lib/modules:ro
+    ports:
+      - "51820:51820/udp"
 
   uptime-kuma:
     image: louislam/uptime-kuma:2.3.2
@@ -29,6 +27,21 @@ services:
       - "127.0.0.1:3002:3001"
     volumes:
       - ./uptime-kuma-data:/app/data
+    deploy:
+      resources:
+        limits:
+          memory: 512M
+
+  nginx:
+    image: nginx:stable
+    container_name: nginx_vps
+    logging: *default-logging
+    restart: always
+    network_mode: host
+    environment:
+      - SYNAPSE_SERVER_NAME=${SYNAPSE_SERVER_NAME}
+    volumes:
+      - ./nginx/nginx.remote.conf:/etc/nginx/nginx.conf:ro
     deploy:
       resources:
         limits:

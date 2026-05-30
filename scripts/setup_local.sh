@@ -98,9 +98,6 @@ fi
 echo "Запуск инфраструктуры настройки..."
 docker compose -f docker-compose.local.yaml up -d monitoring_configure
 
-echo "Запуск инфраструктуры настройки..."
-docker compose -f docker-compose.local.yaml up -d monitoring_configure
-
 echo "Ожидание завершения настройки..."
 until [ "$(docker inspect -f '{{.State.ExitCode}}' monitoring_configure 2>/dev/null)" == "0" ]; do
     EXIT_CODE=$(docker inspect -f '{{.State.ExitCode}}' monitoring_configure 2>/dev/null)
@@ -116,7 +113,7 @@ until [ "$(docker inspect -f '{{.State.ExitCode}}' monitoring_configure 2>/dev/n
 done
 
 echo "Запуск остальных сервисов..."
-MAIN_SERVICES="synapse synapse_db nginx nginx_exporter frpc navidrome audiobookshelf nextcloud nextcloud_db nextcloud_configure vaultwarden vaultwarden_db prometheus_init prometheus grafana node_exporter cadvisor portainer blackbox_exporter alertmanager matrix_alertmanager"
+MAIN_SERVICES="synapse synapse_db nginx nginx_exporter navidrome audiobookshelf nextcloud nextcloud_db nextcloud_configure vaultwarden vaultwarden_db prometheus_init prometheus grafana node_exporter cadvisor portainer alertmanager matrix_alertmanager"
 docker compose -f docker-compose.local.yaml up -d $MAIN_SERVICES
 
 if [ "$NEED_REAL_CERT" = true ]; then
