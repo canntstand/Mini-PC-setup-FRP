@@ -13,11 +13,17 @@ if [ -z "$FRP_TOKEN" ]; then
     exit 1
 fi
 
-echo "=== 1. Установка и настройка системного Nginx ==="
+echo "=== 1. Установка Nginx ==="
 sudo apt update && sudo apt install nginx libnginx-mod-stream -y
 
-echo "Накатываем конфигурацию Nginx..."
-sudo cp ./nginx/nginx.remote.conf /etc/nginx/nginx.conf
+echo "=== Настройка конфига Nginx с подстановкой переменных ==="
+
+envsubst '$SYNAPSE_SERVER_NAME' < ./nginx/nginx.remote.conf.template > /tmp/nginx.conf.tmp
+
+sudo cp /tmp/nginx.conf.tmp /etc/nginx/nginx.conf
+rm /tmp/nginx.conf.tmp
+
+echo "Конфигурация Nginx обновлена."
 
 sudo nginx -t
 sudo systemctl restart nginx
